@@ -127,9 +127,7 @@
 
   // Manual headcount/rate fields are irrelevant while auto-detect drives the count.
   function syncSettingsFieldsState() {
-    const autoDetect = overlay.querySelector('#mct-in-autodetect').checked;
-    overlay.querySelector('#mct-in-attendees').disabled = autoDetect;
-    overlay.querySelector('#mct-in-rate').disabled = autoDetect;
+    overlay.querySelector('#mct-in-attendees').disabled = overlay.querySelector('#mct-in-autodetect').checked;
   }
 
   overlay.querySelector('#mct-in-autodetect').addEventListener('change', syncSettingsFieldsState);
