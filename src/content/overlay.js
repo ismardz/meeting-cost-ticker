@@ -286,24 +286,46 @@
     render();
   }
 
-  // Google Meet: each participant tile carries data-participant-id.
+  // Google Meet participants list: each person is a listitem with
+  // data-participant-id. Non-person entries (e.g. "Merged audio") have no
+  // data-participant-id, so they are excluded automatically. Visitors without
+  // a Google account DO carry the attribute, so they are counted.
+  // The same person can appear in several places (video tile + list entry),
+  // so we count UNIQUE participant ids, not elements.
   function countMeetTiles() {
-    return document.querySelectorAll('[data-participant-id]').length;
+    const list = document.querySelector('div[role="list"][aria-label="Participants" i]');
+    const scope = list || document;
+    const ids = new Set();
+    for (const element of scope.querySelectorAll('[data-participant-id]')) {
+      ids.add(element.getAttribute('data-participant-id'));
+    }
+    return ids.size;
   }
 
-  // Fallback: the "People" button exposes an aria-label like "People (n)".
+  // The "People" button exposes the authoritative total in its aria-label,
+  // e.g. "People (5)" / "Personas (5)" / "5 participants". This count includes
+  // guests even when they have no video tile.
   function countFromPeopleButton() {
-    const button = document.querySelector('button[aria-label*="People" i], button[aria-label*="participants" i]');
-    if (!button) return null;
-    const match = button.getAttribute('aria-label').match(/\d+/);
-    return match ? parseInt(match[0], 10) : null;
+    const buttons = document.querySelectorAll('button[aria-label]');
+    for (const button of buttons) {
+      const label = button.getAttribute('aria-label') || '';
+      if (!/people|participant|personas|participantes|pessoas/i.test(label)) continue;
+      const match = label.match(/\d+/);
+      if (match) return parseInt(match[0], 10);
+    }
+    return null;
   }
 
   function detectParticipantCount() {
     if (!settings.autoDetect) return;
-    const count = countMeetTiles() || countFromPeopleButton();
+    const tiles = countMeetTiles();
+    const fromButton = countFromPeopleButton();
+    // Take the larger of the two: tiles can miss guests that aren't rendered.
+    const candidates = [tiles, fromButton].filter((value) => value !== null);
+    if (candidates.length === 0) return;
+    const count = Math.max(...candidates);
     // Zero is meaningful (empty room = meeting ended) once we've seen participants.
-    if (count !== null && (count > 0 || (count === 0 && liveCount !== null && liveCount > 0))) {
+    if (count > 0 || (count === 0 && liveCount !== null && liveCount > 0)) {
       setLiveCount(count);
     }
   }
