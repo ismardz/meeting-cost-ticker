@@ -1,0 +1,169 @@
+/* Meeting Cost Ticker — overlay styles */
+
+#meeting-cost-ticker {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  width: 220px;
+  background: #1c1f26;
+  color: #f5f7fa;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  user-select: none;
+  overflow: hidden;
+  cursor: grab;
+}
+
+#meeting-cost-ticker:active {
+  cursor: grabbing;
+}
+
+#meeting-cost-ticker button,
+#meeting-cost-ticker input,
+#meeting-cost-ticker select,
+#meeting-cost-ticker label {
+  cursor: auto;
+}
+
+#meeting-cost-ticker button {
+  cursor: pointer;
+}
+
+#meeting-cost-ticker .mct-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #262b35;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9aa3b2;
+}
+
+#meeting-cost-ticker .mct-body {
+  padding: 12px;
+  text-align: center;
+}
+
+#meeting-cost-ticker .mct-cost {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: grab;
+  user-select: none;
+}
+
+#meeting-cost-ticker .mct-cost:active {
+  cursor: grabbing;
+}
+
+#meeting-cost-ticker .mct-time {
+  margin-top: 2px;
+  font-size: 14px;
+  color: #9aa3b2;
+  font-variant-numeric: tabular-nums;
+}
+
+#meeting-cost-ticker .mct-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #6d7686;
+}
+
+#meeting-cost-ticker .mct-controls {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+#meeting-cost-ticker .mct-btn {
+  border: none;
+  background: #333a47;
+  color: #e6e9ee;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+#meeting-cost-ticker .mct-btn:hover {
+  background: #454e5f;
+}
+
+#meeting-cost-ticker.mct-paused .mct-cost {
+  color: #f0b429;
+}
+
+#meeting-cost-ticker .mct-settings {
+  display: none;
+  padding: 0 12px 12px;
+  border-top: 1px solid #333a47;
+}
+
+#meeting-cost-ticker .mct-settings.mct-open {
+  display: block;
+}
+
+#meeting-cost-ticker .mct-settings label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9aa3b2;
+  gap: 8px;
+}
+
+#meeting-cost-ticker .mct-settings input,
+#meeting-cost-ticker .mct-settings select {
+  width: 90px;
+  background: #262b35;
+  color: #e6e9ee;
+  border: 1px solid #454e5f;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+}
+
+#meeting-cost-ticker .mct-save {
+  margin-top: 10px;
+  width: 100%;
+  background: #228b57;
+}
+
+#meeting-cost-ticker .mct-save:hover {
+  background: #2aa468;
+}
+
+#meeting-cost-ticker .mct-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  background: linear-gradient(
+    135deg,
+    transparent 0 50%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 50% calc(50% + 2px),
+    rgba(255, 255, 255, 0.25) calc(50% + 2px) calc(50% + 4px),
+    transparent calc(50% + 4px)
+  );
+  border-bottom-right-radius: 12px;
+}
+
+#meeting-cost-ticker .mct-resize-handle:hover {
+  background: linear-gradient(
+    135deg,
+    transparent 0 50%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.5) calc(50% + 2px),
+    transparent calc(50% + 2px)
+  );
+}

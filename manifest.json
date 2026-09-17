@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Meeting Cost Ticker",
+  "version": "1.0.0",
+  "description": "Shows the live cost of a meeting based on attendees and their average hourly rate.",
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "Meeting Cost Ticker settings"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://meet.google.com/*",
+        "https://*.zoom.us/*",
+        "https://teams.microsoft.com/*"
+        ],
+      "js": ["src/content/overlay.js"],
+      "css": ["src/content/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

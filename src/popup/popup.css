@@ -1,0 +1,75 @@
+/* Meeting Cost Ticker — popup styles */
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: #f5f7fa;
+  color: #1c1f26;
+  width: 280px;
+}
+
+.container {
+  padding: 16px;
+}
+
+h1 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #6d7686;
+  margin: 0 0 14px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+  color: #454e5f;
+}
+
+input,
+select {
+  padding: 6px 8px;
+  border: 1px solid #c9d0da;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+}
+
+button {
+  margin-top: 14px;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  background: #228b57;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2aa468;
+}
+
+#status {
+  min-height: 16px;
+  font-size: 12px;
+  color: #228b57;
+  margin: 8px 0 0;
+}
+
+footer {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #9aa3b2;
+}
