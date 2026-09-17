@@ -99,6 +99,16 @@
   color: #f0b429;
 }
 
+#meeting-cost-ticker.mct-ended .mct-cost {
+  color: #6d7686;
+}
+
+#meeting-cost-ticker.mct-ended .mct-time::after {
+  content: ' · ended';
+  color: #f0b429;
+  font-size: 12px;
+}
+
 #meeting-cost-ticker .mct-settings {
   display: none;
   padding: 0 12px 12px;
@@ -119,6 +129,15 @@
   gap: 8px;
 }
 
+#meeting-cost-ticker .mct-settings label.mct-toggle-row {
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+#meeting-cost-ticker .mct-settings label.mct-toggle-row input {
+  width: auto;
+}
+
 #meeting-cost-ticker .mct-settings input,
 #meeting-cost-ticker .mct-settings select {
   width: 90px;
@@ -128,6 +147,11 @@
   border-radius: 4px;
   padding: 3px 6px;
   font-size: 12px;
+}
+
+#meeting-cost-ticker .mct-settings input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 #meeting-cost-ticker .mct-save {

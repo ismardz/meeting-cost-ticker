@@ -11,10 +11,14 @@
     currency: 'USD',
     running: true,
     scale: 1,
+    autoDetect: true,
   };
 
   let settings = { ...DEFAULTS };
   let elapsedSeconds = 0;
+  let costAccumulated = 0; // priced per second, so attendee changes are dynamic
+  let liveCount = null; // participants detected in the meeting UI (null = unknown)
+  let participantEvents = []; // { at: Date, delta: +1/-1, count }
   let tickInterval = null;
 
   const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', MXN: '$', COP: '$', ARS: '$', BRL: 'R$', PEN: 'S/' };
@@ -25,8 +29,14 @@
     return currencySymbol(settings.currency) + value.toFixed(2);
   }
 
+  function currentAttendees() {
+    // Live count wins when detection is on and has seen at least one participant.
+    if (settings.autoDetect && liveCount !== null && liveCount > 0) return liveCount;
+    return settings.attendees;
+  }
+
   function costPerSecond() {
-    return (settings.attendees * settings.hourlyRate) / 3600;
+    return (currentAttendees() * settings.hourlyRate) / 3600;
   }
 
   function formatElapsed(totalSeconds) {
@@ -39,7 +49,7 @@
   function render() {
     const costEl = overlay.querySelector('#mct-cost');
     const timeEl = overlay.querySelector('#mct-time');
-    if (costEl) costEl.textContent = formatMoney(elapsedSeconds * costPerSecond());
+    if (costEl) costEl.textContent = formatMoney(costAccumulated);
     if (timeEl) timeEl.textContent = formatElapsed(elapsedSeconds);
   }
 
@@ -47,6 +57,7 @@
     if (tickInterval) return;
     tickInterval = setInterval(() => {
       if (settings.running) {
+        costAccumulated += costPerSecond(); // price each second at the current headcount
         elapsedSeconds += 1;
         render();
       }
@@ -63,7 +74,10 @@
 
   function reset() {
     elapsedSeconds = 0;
+    costAccumulated = 0;
+    participantEvents = [];
     render();
+    updateMeta();
   }
 
   // ---------- overlay construction ----------
@@ -88,6 +102,7 @@
       </div>
     </div>
     <div class="mct-settings" hidden>
+      <label class="mct-toggle-row"><input type="checkbox" id="mct-in-autodetect" /> Auto-detect people</label>
       <label>Attendees <input type="number" id="mct-in-attendees" min="1" max="500" /></label>
       <label>Avg rate / hour <input type="number" id="mct-in-rate" min="0" step="0.5" /></label>
       <label>Currency
@@ -110,16 +125,28 @@
     settingsPanel.classList.toggle('mct-open');
   });
 
+  // Manual headcount/rate fields are irrelevant while auto-detect drives the count.
+  function syncSettingsFieldsState() {
+    const autoDetect = overlay.querySelector('#mct-in-autodetect').checked;
+    overlay.querySelector('#mct-in-attendees').disabled = autoDetect;
+    overlay.querySelector('#mct-in-rate').disabled = autoDetect;
+  }
+
+  overlay.querySelector('#mct-in-autodetect').addEventListener('change', syncSettingsFieldsState);
+
   overlay.querySelector('#mct-save').addEventListener('click', () => {
     const attendees = parseInt(overlay.querySelector('#mct-in-attendees').value, 10);
     const hourlyRate = parseFloat(overlay.querySelector('#mct-in-rate').value);
     const currency = overlay.querySelector('#mct-in-currency').value;
+    const autoDetect = overlay.querySelector('#mct-in-autodetect').checked;
     settings = {
       ...settings,
       attendees: Number.isFinite(attendees) && attendees > 0 ? attendees : settings.attendees,
       hourlyRate: Number.isFinite(hourlyRate) && hourlyRate >= 0 ? hourlyRate : settings.hourlyRate,
       currency,
+      autoDetect,
     };
+    if (!autoDetect) liveCount = null; // fall back to the manual headcount
     chrome.storage.sync.set(settings);
     updateMeta();
     render();
@@ -133,9 +160,16 @@
 
   function updateMeta() {
     const meta = overlay.querySelector('#mct-meta-text');
-    if (meta) {
-      meta.textContent = `${settings.attendees} people · ${currencySymbol(settings.currency)}${settings.hourlyRate}/h each`;
+    if (!meta) return;
+    const headcount = currentAttendees();
+    const source = settings.autoDetect && liveCount !== null && liveCount > 0 ? 'live' : 'manual';
+    let text = `${headcount} people (${source}) · ${currencySymbol(settings.currency)}${settings.hourlyRate}/h each`;
+    if (participantEvents.length > 0) {
+      const joins = participantEvents.filter((event) => event.delta > 0).length;
+      const leaves = participantEvents.filter((event) => event.delta < 0).length;
+      text += ` · ${joins} joined, ${leaves} left`;
     }
+    meta.textContent = text;
   }
 
   // ---------- dragging ----------
@@ -228,6 +262,58 @@
   resizeHandle.addEventListener('pointercancel', endResize);
   resizeHandle.addEventListener('dblclick', resetSize);
 
+  // ---------- live participant detection ----------
+
+  function recordParticipantEvent(delta, count) {
+    participantEvents.push({ at: new Date(), delta, count });
+    updateMeta();
+  }
+
+  function setLiveCount(count) {
+    if (count === liveCount) return;
+    const previous = liveCount;
+    liveCount = count;
+    if (previous !== null && previous > 0 && count === 0) {
+      // Everyone left: stop accruing cost and show the ended state.
+      overlay.classList.add('mct-ended');
+      setRunning(false);
+    } else if (previous === 0 && count > 0) {
+      // Someone rejoined an empty room: resume.
+      overlay.classList.remove('mct-ended');
+      setRunning(true);
+    }
+    if (previous !== null && count > previous) recordParticipantEvent(+1, count);
+    if (previous !== null && count < previous) recordParticipantEvent(-1, count);
+    updateMeta();
+    render();
+  }
+
+  // Google Meet: each participant tile carries data-participant-id.
+  function countMeetTiles() {
+    return document.querySelectorAll('[data-participant-id]').length;
+  }
+
+  // Fallback: the "People" button exposes an aria-label like "People (n)".
+  function countFromPeopleButton() {
+    const button = document.querySelector('button[aria-label*="People" i], button[aria-label*="participants" i]');
+    if (!button) return null;
+    const match = button.getAttribute('aria-label').match(/\d+/);
+    return match ? parseInt(match[0], 10) : null;
+  }
+
+  function detectParticipantCount() {
+    if (!settings.autoDetect) return;
+    const count = countMeetTiles() || countFromPeopleButton();
+    // Zero is meaningful (empty room = meeting ended) once we've seen participants.
+    if (count !== null && (count > 0 || (count === 0 && liveCount !== null && liveCount > 0))) {
+      setLiveCount(count);
+    }
+  }
+
+  const participantObserver = new MutationObserver(() => detectParticipantCount());
+  participantObserver.observe(document.documentElement, { childList: true, subtree: true });
+  setInterval(detectParticipantCount, 3000); // safety net if the observer misses UI swaps
+
   // ---------- init ----------
 
   chrome.storage.sync.get(DEFAULTS, (stored) => {
@@ -235,7 +321,9 @@
     overlay.querySelector('#mct-in-attendees').value = settings.attendees;
     overlay.querySelector('#mct-in-rate').value = settings.hourlyRate;
     overlay.querySelector('#mct-in-currency').value = settings.currency;
+    overlay.querySelector('#mct-in-autodetect').checked = settings.autoDetect;
     applyScale(settings.scale || 1);
+    syncSettingsFieldsState();
     if (!settings.running) {
       const btn = overlay.querySelector('#mct-toggle');
       if (btn) btn.textContent = '▶';
