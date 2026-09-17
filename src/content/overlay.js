@@ -12,6 +12,7 @@
     running: true,
     scale: 1,
     autoDetect: true,
+    hidden: false,
   };
 
   let settings = { ...DEFAULTS };
@@ -20,6 +21,26 @@
   let liveCount = null; // participants detected in the meeting UI (null = unknown)
   let participantEvents = []; // { at: Date, delta: +1/-1, count }
   let tickInterval = null;
+
+  // After a dev-mode reload the old content script keeps running but its
+  // chrome.* APIs are dead. Detect that and self-clean up.
+  function isExtensionContextValid() {
+    try {
+      return Boolean(chrome.runtime && chrome.runtime.id);
+    } catch {
+      return false; // throws "Extension context invalidated" when dead
+    }
+  }
+
+  function shutdownStaleInstance() {
+    if (tickInterval) {
+      clearInterval(tickInterval);
+      tickInterval = null;
+    }
+    if (detectionInterval) clearInterval(detectionInterval);
+    participantObserver.disconnect();
+    overlay.remove();
+  }
 
   const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', MXN: '$', COP: '$', ARS: '$', BRL: 'R$', PEN: 'S/' };
 
@@ -56,6 +77,10 @@
   function startTicking() {
     if (tickInterval) return;
     tickInterval = setInterval(() => {
+      if (!isExtensionContextValid()) {
+        shutdownStaleInstance();
+        return;
+      }
       if (settings.running) {
         costAccumulated += costPerSecond(); // price each second at the current headcount
         elapsedSeconds += 1;
@@ -154,7 +179,21 @@
 
   overlay.querySelector('#mct-toggle').addEventListener('click', () => setRunning(!settings.running));
   overlay.querySelector('#mct-reset').addEventListener('click', reset);
-  overlay.querySelector('#mct-close').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#mct-close').addEventListener('click', () => {
+    // Hide instead of remove, so the popup can reopen it later.
+    overlay.style.display = 'none';
+    chrome.storage.sync.set({ hidden: true });
+  });
+
+  // Reopen the ticker when the popup asks for it.
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message && message.type === 'mct-show') {
+      overlay.style.display = '';
+      chrome.storage.sync.set({ hidden: false });
+      sendResponse({ ok: true }); // acknowledge, so the popup doesn't see lastError
+    }
+    return false;
+  });
 
   function updateMeta() {
     const meta = overlay.querySelector('#mct-meta-text');
@@ -317,6 +356,10 @@
   }
 
   function detectParticipantCount() {
+    if (!isExtensionContextValid()) {
+      shutdownStaleInstance();
+      return;
+    }
     if (!settings.autoDetect) return;
     const tiles = countMeetTiles();
     const fromButton = countFromPeopleButton();
@@ -332,7 +375,7 @@
 
   const participantObserver = new MutationObserver(() => detectParticipantCount());
   participantObserver.observe(document.documentElement, { childList: true, subtree: true });
-  setInterval(detectParticipantCount, 3000); // safety net if the observer misses UI swaps
+  const detectionInterval = setInterval(detectParticipantCount, 3000); // safety net if the observer misses UI swaps
 
   // ---------- init ----------
 
@@ -344,6 +387,7 @@
     overlay.querySelector('#mct-in-autodetect').checked = settings.autoDetect;
     applyScale(settings.scale || 1);
     syncSettingsFieldsState();
+    if (settings.hidden) overlay.style.display = 'none';
     if (!settings.running) {
       const btn = overlay.querySelector('#mct-toggle');
       if (btn) btn.textContent = '▶';

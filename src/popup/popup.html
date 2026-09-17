@@ -11,6 +11,11 @@
     <p class="subtitle">Default settings for the meeting overlay.</p>
 
     <form id="settings-form">
+      <label class="toggle-row" for="auto-detect">
+        <input type="checkbox" id="auto-detect" />
+        Auto-detect people (live headcount)
+      </label>
+
       <label for="attendees">Attendees</label>
       <input type="number" id="attendees" min="1" max="500" required />
 
@@ -31,6 +36,8 @@
 
       <button type="submit" id="save">Save</button>
     </form>
+
+    <button type="button" id="show-ticker">Show ticker in this tab</button>
 
     <p id="status" role="status"></p>
 

@@ -36,6 +36,22 @@ label {
   color: #454e5f;
 }
 
+label.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+label.toggle-row input {
+  width: auto;
+  margin: 0;
+}
+
+input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 input,
 select {
   padding: 6px 8px;
@@ -59,6 +75,15 @@ button {
 
 button:hover {
   background: #2aa468;
+}
+
+#show-ticker {
+  background: #454e5f;
+  margin-top: 8px;
+}
+
+#show-ticker:hover {
+  background: #59637a;
 }
 
 #status {
