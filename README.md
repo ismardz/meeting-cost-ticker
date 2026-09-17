@@ -7,10 +7,14 @@ A browser extension that shows the **live cost of a meeting** as it happens, bas
 ## Features
 
 - 💰 Live cost ticker that updates every second
+- 👥 **Live attendee detection** — counts people in the meeting as they join and leave, and prices each second at the current headcount
+- 📋 Join/leave log in the overlay (`2 joined, 1 left`)
+- 🏁 Auto-pauses when everyone leaves the room; resumes automatically if someone rejoins
 - ⏱️ Elapsed meeting timer
 - ⏸️ Start / pause / reset controls
-- ⚙️ Inline settings (attendees, rate, currency) directly on the overlay
-- 🖱️ Draggable overlay — grab the big number to move it
+- ⚙️ Inline settings (auto-detect toggle, attendees, rate, currency) directly on the overlay
+- 🖱️ Draggable overlay — grab anywhere to move it
+- 📐 Resizable — drag the bottom-right corner handle (double-click to reset)
 - 🌐 Works on Google Meet, Zoom (web) and Microsoft Teams
 
 ## Install (developer mode)
@@ -27,15 +31,21 @@ A browser extension that shows the **live cost of a meeting** as it happens, bas
 
 1. Join a meeting on Google Meet, Zoom or Teams.
 2. The ticker appears in the top-right corner and starts counting automatically.
-3. Click the ⚙ button to adjust attendees, hourly rate and currency without leaving the call.
-4. Use ⏸ / ▶ to pause or resume, and ↺ to reset.
-5. Click × to hide the ticker for the rest of the session.
+3. With **Auto-detect people** enabled (default), the headcount follows the meeting live — the Attendees and Avg rate fields are disabled while it's on. Turn it off to set the headcount manually.
+4. Click the ⚙ button to adjust the rate and currency without leaving the call.
+5. Use ⏸ / ▶ to pause or resume, and ↺ to reset (clears the accumulated cost and the join/leave log).
+6. When everyone leaves the room, the ticker auto-pauses and shows `· ended`; it resumes if someone rejoins.
+7. Click × to hide the ticker for the rest of the session.
 
 ## Cost formula
 
+The cost is **accumulated per second** at the headcount present at that second, so mid-meeting joins and leaves are priced dynamically:
+
 ```
-cost = attendees × hourlyRate × (elapsedSeconds / 3600)
+cost = Σ (attendeesAtSecond × hourlyRate / 3600)
 ```
+
+With auto-detect off (or before detection has seen anyone), `attendees` is the manual value from settings.
 
 ## Project structure
 
@@ -57,8 +67,8 @@ meeting-cost-ticker/
 
 ## Roadmap ideas
 
-- Auto-detect attendee count from the meeting UI
-- Sync settings across devices (already uses `storage.sync`)
+- ~~Auto-detect attendee count from the meeting UI~~ ✅ done
+- Per-platform selectors for Zoom and Teams (currently tile detection is Meet-specific; others use the aria-label fallback)
 - Weekly "meeting waste" report
 - Firefox port (WebExtensions API is compatible)
 
